@@ -32,5 +32,16 @@ class TargetObject:
         self.height = height
         self.centerOfMass = Point(self.topLeft.currX + self.width/2, self.topLeft.currY + self.height/2)
     def isInLandingZone(self, zone):
-        if (self.centerOfMass.currX > zone.topLeft.currX and self.centerOfMass.currX < zone.topLeft.currX + width and self.centerOfMass.currY > zone.topLeft.currY and self.centerOfMass.currY < zone.topLeft.currY + height):
+        if (self.centerOfMass.currX > zone.topLeft.currX and self.centerOfMass.currX < zone.topLeft.currX + self.width and self.centerOfMass.currY > zone.topLeft.currY and self.centerOfMass.currY < zone.topLeft.currY + self.height):
+            return True
+        else:
+            return False
             
+class Romo:
+    def __init__(self, topLeft, width, height):
+        self.topLeft = topLeft
+        self.width = width
+        self.height = height
+        self.centerOfMass = Point(self.topLeft.currX + self.width/2, self.topLeft.currY + self.height/2)
+    def orient(self):
+        #@TODO: Needs to orient to obtain vector direction/orientation using some movement as camera feed can't pick this up
