@@ -23,6 +23,7 @@ def init():
 	draw_field(landing_zones, romo, objs, field_width, field_height)
 
 def draw_field(landing_zones, romo, objs, field_width, field_height):
+	global num
 	figure = plt.figure()
 	translate_objects = []
 	for obj in objs:
@@ -62,7 +63,7 @@ def main():
 	steps = read_instructions()
 	for step in steps:
 		perform_instruction(step)
-	os.system("ffmpeg -r 10 -i romo%d.jpg -vcodec mpeg4 sim_out.mp4")
+	os.system("ffmpeg -r 3 -i romo%d.jpg -vcodec mpeg4 sim_out.mp4")
 	
 if __name__ == "__main__":
     main()
