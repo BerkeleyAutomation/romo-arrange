@@ -5,7 +5,7 @@ from pylab import *
 #landing zone looks like:  (x, y, width, height, color)
 #object looks like: (x, y, width, height, color)
 #romo_info looks like: (x, y, width, height, color, rotation angle in degrees)
-def draw_field(figure, axis, landing_zones, romo_info, field_width, field_height, objects, num):
+def draw_field(figure, axis, landing_zones, romo_info, field_width, field_height, objects, num, instruction):
     axis.yaxis.grid(color='black', linestyle='dashed')
     axis.xaxis.grid(color='black', linestyle='dashed')
     for x in landing_zones:
@@ -35,8 +35,8 @@ def draw_field(figure, axis, landing_zones, romo_info, field_width, field_height
     axis.add_patch(romo_stripe)
     plt.xlim([0, field_width])
     plt.ylim([0, field_height])
-    
-    savefig("romo" + "" + str(num) + ".jpg")
+
+    savefig(instruction + "/romo" + "" + str(num) + ".jpg")
     axis.cla()
 
 
