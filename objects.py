@@ -1,4 +1,5 @@
 # Contains objects that will be used by the Romo project
+import math
 
 class Point:
     def __init__(self, startX, startY):
@@ -20,28 +21,40 @@ class Vector:
         self.point2 = startPoint2
         
 class LandingZone:
-    def __init__(self, topLeft, width, height):
-        self.topLeft = topLeft
+    def __init__(self, bottomLeft, width, height):
+        self.bottomLeft = bottomLeft
         self.width = width
         self.height = height
         
 class TargetObject:
-    def __init__(self, topLeft, width, height):
-        self.topLeft = topLeft
+    def __init__(self, bottomLeft, width, height, color):
+        self.bottomLeft = bottomLeft
         self.width = width
         self.height = height
-        self.centerOfMass = Point(self.topLeft.currX + self.width/2, self.topLeft.currY + self.height/2)
-    def isInLandingZone(self, zone):
-        if (self.centerOfMass.currX > zone.topLeft.currX and self.centerOfMass.currX < zone.topLeft.currX + self.width and self.centerOfMass.currY > zone.topLeft.currY and self.centerOfMass.currY < zone.topLeft.currY + self.height):
-            return True
-        else:
-            return False
+        self.color = color
             
 class Romo:
-    def __init__(self, topLeft, width, height):
-        self.topLeft = topLeft
+    def __init__(self, bottomLeft, width, height, rotation):
+        self.bottomLeft = bottomLeft
         self.width = width
         self.height = height
-        self.centerOfMass = Point(self.topLeft.currX + self.width/2, self.topLeft.currY + self.height/2)
-    def orient(self):
-        #@TODO: Needs to orient to obtain vector direction/orientation using some movement as camera feed can't pick this up
+        self.rotation = rotation
+
+        theta = math.atan(self.height/self.width)
+        d = self.height/math.sin(theta)
+        x = bottomLeft.currX + (d/2) * math.cos(theta + math.radians(self.rotation))
+        y = bottomLeft.currY + (d/2) * math.sin(theta + math.radians(self.rotation))
+
+        self.center = Point(x, y)
+    def setX(self, newX):
+        self.bottomLeft.currX = newX
+        self.repair()
+    def setY(self, newY):
+        self.bottomLeft.currY = newY
+        self.repair()
+    def repair(self):
+        theta = math.atan(self.height/self.width)
+        d = self.height/math.sin(theta)
+        x = self.bottomLeft.currX + (d/2) * math.cos(theta + math.radians(self.rotation))
+        y = self.bottomLeft.currY + (d/2) * math.sin(theta + math.radians(self.rotation))
+        self.center = Point(x, y)
