@@ -9,60 +9,77 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import animation
 import pylab
-from numpy import sin, cos, pi
-
-rect2 = matplotlib.patches.Rectangle((20,5),3,3)
-block_list= [rect2]
+from numpy import sin, cos, pi, exp
 
 fig = plt.figure()
 ax = plt.axes(xlim=(0, 100), ylim=(0, 100))
-rect = matplotlib.patches.Rectangle((5,5),3,3)
-ax.add_patch(rect)
-ax.add_patch(rect2)
 a = 0
-x = rect.get_x()
-y = rect.get_y()
-plt.plot(3,30)
-plt.show()
-
 collision_list=[]
-"""
-romo = rect
-check_collision(romo)
-while a < 100:
-    rect.set_x(x+a*2)
-    for elem in collision_list:
-        elem.set_x(x+a*2)
-    time.sleep(1)
-    #ax.add_patch(rect)
-    a += 1
-    #rect.figure.canvas.draw()
-    #if collision(rect)
-    plt.draw()
-"""     
-class Block: 
+
+def animate_romo(romo,distance):
+    if predict_collision(romo,distance):
+        blocks = check_collision(romo)
+        total = 0
+        while blocks == False:
+            #print(blocks)
+            d = predict_collision(romo,distance)
+            move_distance([romo],d+0.5)
+            total += d 
+            blocks = check_collision(romo)
+            if blocks != False:
+                break       
+        move_distance([romo,blocks[0]],distance-total)
+    else:
+        move_distance([romo],distance)
+    
+def move_distance(obj_list,d):
+        #while a < 5:
+        for obj in obj_list:
+            obj.rect.set_x(obj.rect.get_x() + d*cos((pi*obj.rotation)/180))
+            obj.rect.set_y(obj.rect.get_y() + d*sin((pi*obj.rotation)/180))
+            obj.x = obj.rect.get_x()
+            obj.y = obj.rect.get_y()
+            obj.update_fields()
+        time.sleep(1)
+            #ax.add_patch(rect)
+            #a += 1
+            #rect.figure.canvas.draw()
+            #if collision(rect)
+        plt.draw() 
+  
+class Block: #NEED to update vertex and (x,y) positions when moved :(
     def __init__(self,x,y,rotation,width,height): #x and y are lower left vertex
         self.rect = matplotlib.patches.Rectangle((x,y),width,width)
     #vertices are clockwise starting with lower left
-        self.v1 = (x,y)
+        self.v1 = [x,y]
         self.rotation = (rotation*pi)/180
-        if rotation != 0:
-            trans = matplotlib.transforms.Affine2D().rotate_deg_around(rect.get_x(), rect.get_y(), rotation) + ax.transData
-            rect.set_transform(trans)
-            self.v2 = (x-height*cos(rotation),y+height*sin(rotation))
-            self.v3 = (self.v2[0]+width*cos(rotation),self.v2[1]+width*sin(rotation))
-            self.v4 = (x + width*cos(rotation),y+width*sin(rotation))
+        if self.rotation != 0:
+            trans = matplotlib.transforms.Affine2D().rotate_deg_around(self.rect.get_x(), self.rect.get_y(), rotation) + ax.transData
+            self.rect.set_transform(trans)
+            self.v2 = [x-height*sin(self.rotation),y+height*cos(self.rotation)]
+            self.v3 = [self.v2[0]+width*cos(self.rotation),self.v2[1]+width*sin(self.rotation)]
+            self.v4 = [x + width*cos(self.rotation),y+width*sin(self.rotation)]
         else:
-            self.v2 = (x,y+height)
-            self.v3 = (x+width,y+height)
-            self.v4 = (x + width, y)
+            self.v2 = [x,y+height]
+            self.v3 = [x+width,y+height]
+            self.v4 = [x + width, y]
         self.width = width
         self.height = height
         self.x = x
         self.y = y
         #self.animate = False
         ax.add_patch(self.rect)
-        plt.draw() 
+        plt.draw()
+    def update_fields(self):
+        if self.rotation != 0:
+            self.v1 = [self.x,self.y]
+            self.v2 = [self.x-self.height*cos(self.rotation),self.y+self.height*sin(self.rotation)]
+            self.v3 = [self.v2[0]+self.width*cos(self.rotation),self.v2[1]+self.width*sin(self.rotation)]
+            self.v4 = [self.x + self.width*cos(self.rotation),self.y+self.width*sin(self.rotation)]
+        else:
+            self.v2 = [self.x,self.y+self.height]
+            self.v3 = [self.x+self.width,self.y+self.height]
+            self.v4 = [self.x + self.width, self.y]
 
 class Romo(Block):
     def __init__(self,x,y,rotation,width,height): #x and y are lower left vertex
@@ -111,6 +128,10 @@ class Segment:
     def is_right_of(self, seg): #returns True if seg is to the right of or below this segment
         if self.check_intersect(seg):
             return False
+        elif self.slope == 'vertical':
+            if seg.x1 > self.x1 and seg.x2 > self.x1:
+                return True
+            return False
         elif self.slope < 0:
             if self.function(seg.x1) < seg.y1 and self.function(seg.x2) < seg.y2:
                 return True
@@ -123,10 +144,7 @@ class Segment:
             if self.function(seg.x1) > seg.y1 and self.function(seg.x2) > seg.y2:
                 return True
             return False
-        elif self.slope == 'vertical':
-            if seg.x1 > self.x1 and seg.x2 > self.x1:
-                return True
-            return False
+        
     def contains(self,x):
         if x >= self.x1 and x <= self.x2 or x <=self.x1 and x >= self.x2:
             return True
@@ -144,7 +162,7 @@ def check_collision(romo): #Takes a Romo object
     romo_segments = [r_seg1,r_seg2,r_seg3,r_seg4] 
     line_list = []
     for block in block_list:
-        index = block_list.get_index(block)
+        index = block_list.index(block)
         seg1 = Segment(block.v1,block.v2,index)
         seg2 = Segment(block.v2,block.v3,index)
         seg3 = Segment(block.v3,block.v4,index)
@@ -157,13 +175,14 @@ def check_collision(romo): #Takes a Romo object
             #print("checking {0} {1}".format(seg,line))
             if seg.check_intersect(line) == True: #will return the first collision it sees!
                 collision_list.append(block_list[seg.block])
-                return True
+                return block_list
     return False
 
 def predict_collision(romo,distance): #only works for positive distances to the right of the Romo right now! 
-    #Returns the x distance the Romo can travel in current direction before a collision occurs
+    #Returns the distance the Romo can travel in current direction before a collision occurs
     # the follwing creates a box for the Romo path:
     path_seg1 = Segment(romo.v3,(romo.v3[0] + distance*cos(romo.rotation),romo.v3[1] + distance*sin(romo.rotation)),-1)
+    #print(path_seg1)
     path_seg2 = Segment(romo.v4,(romo.v4[0] + distance*cos(romo.rotation),romo.v4[1] + distance*sin(romo.rotation)),-1)
     bound_seg1 = Segment((path_seg1.x1,path_seg1.y1),(path_seg2.x1,path_seg2.y1),-1)
     bound_seg2 = Segment((path_seg1.x2,path_seg1.y2),(path_seg2.x2,path_seg2.y2),-1)
@@ -171,7 +190,7 @@ def predict_collision(romo,distance): #only works for positive distances to the 
     seg_list = []
     colliding_segs = []
     for block in block_list: #should update this outside of function!
-        index = block_list.get_index(block)
+        index = block_list.index(block)
         seg1 = Segment(block.v1,block.v2,index)
         seg2 = Segment(block.v2,block.v3,index)
         seg3 = Segment(block.v3,block.v4,index)
@@ -186,22 +205,26 @@ def predict_collision(romo,distance): #only works for positive distances to the 
     if len(colliding_segs) == 0:
         return False #No collisions in path
     obj = colliding_segs[0]
-    if path_seg1.slope == 0:
-        x = min(obj.x1,obj.x2)
+    print(obj)
+    if path_seg1.slope == 'vertical':
+        d = min(obj.y1,obj.y2)-romo.v3[1]
+    elif path_seg1.slope == 0:
+        #print("HERE")
+        d = min(obj.x1,obj.x2)-path_seg1.x1
     elif path_seg1.slope > 0:
         perp_slope = -1/path_seg1.slope
         x = ((-1*perp_slope*obj.x1 + obj.y1) - path_seg1.b)/(path_seg1.slope - perp_slope)
-    elif path_seg1.slope == 'vertical':
-        if y1 < y2:
-            x = obj.x1
-        else:
-            x = obj.x2
-    return x
+        relative_x = x - path_seg1.x1
+        relative_y = path_seg1.function(x) - path_seg1.y1
+        d = (relative_x ** 2 + relative_y ** 2) ** 0.5
+    return d
 
+block1 = Block(20,5,0,5,5)
+#romo = Romo(10+9*cos((20*pi)/180),5+9*sin((20*pi)/180),20,5,5)
+romo = Romo(10,5,10,5,5)
+block_list= [block1]
+plt.show()
 
-    
-romo = Romo(5,5,0,5,5)
-seg1 = Segment((3,7),(7,14),0)
-seg2 = Segment((8,7),(0,15),1)
+#doesn't work with running into vertical lines, for some reason doesn't acknowledge collisions at smaller distances.
 
      
