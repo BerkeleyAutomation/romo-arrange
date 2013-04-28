@@ -1,6 +1,6 @@
 # Run with wx interpreter!
 # GUI runs into problems when you attempt to close the window or enter a command in 
-# maybe run a lop for command or implement threading?
+# maybe run a loop for command or implement threading?
 # ask others about using path vector to find intersection point of collisions instead of using steps.
 
 import numpy as np
@@ -15,6 +15,8 @@ fig = plt.figure()
 ax = plt.axes(xlim=(0, 100), ylim=(0, 100))
 a = 0
 collision_list=[]
+box = []
+segs = []
 
 def animate_romo(romo,distance):
     if predict_collision(romo,distance):
@@ -34,9 +36,11 @@ def animate_romo(romo,distance):
     
 def move_distance(obj_list,d):
         #while a < 5:
+        print(d)
         for obj in obj_list:
-            obj.rect.set_x(obj.rect.get_x() + d*cos((pi*obj.rotation)/180))
-            obj.rect.set_y(obj.rect.get_y() + d*sin((pi*obj.rotation)/180))
+            obj.rect.set_x(obj.rect.get_x() + d*cos(romo.rotation))
+            obj.rect.set_y(obj.rect.get_y() + d*sin(romo.rotation))
+            
             obj.x = obj.rect.get_x()
             obj.y = obj.rect.get_y()
             obj.update_fields()
@@ -71,15 +75,16 @@ class Block: #NEED to update vertex and (x,y) positions when moved :(
         ax.add_patch(self.rect)
         plt.draw()
     def update_fields(self):
-        if self.rotation != 0:
-            self.v1 = [self.x,self.y]
-            self.v2 = [self.x-self.height*cos(self.rotation),self.y+self.height*sin(self.rotation)]
-            self.v3 = [self.v2[0]+self.width*cos(self.rotation),self.v2[1]+self.width*sin(self.rotation)]
-            self.v4 = [self.x + self.width*cos(self.rotation),self.y+self.width*sin(self.rotation)]
-        else:
-            self.v2 = [self.x,self.y+self.height]
-            self.v3 = [self.x+self.width,self.y+self.height]
-            self.v4 = [self.x + self.width, self.y]
+        #if self.rotation != 0:
+        self.v1 = [self.x,self.y]
+        self.v2 = [self.x-self.height*sin(romo.rotation),self.y+self.height*cos(romo.rotation)]
+        #print(self.y+self.height*cos(romo.rotation))
+        self.v3 = [self.v2[0]+self.width*cos(romo.rotation),self.v2[1]+self.width*sin(romo.rotation)]
+        self.v4 = [self.x + self.width*cos(romo.rotation),self.y+self.width*sin(romo.rotation)]
+        #else:
+        #    self.v2 = [self.x,self.y+self.height]
+        #    self.v3 = [self.x+self.width,self.y+self.height]
+        #    self.v4 = [self.x + self.width, self.y]
 
 class Romo(Block):
     def __init__(self,x,y,rotation,width,height): #x and y are lower left vertex
@@ -91,6 +96,8 @@ class Segment:
          self.y1 = p1[1]
          self.x2 = p2[0]
          self.y2 = p2[1]
+         self.p1 = list(p1)
+         self.p2 = list(p2)
          if self.x1 == self.x2:
              self.slope = "vertical"
              #self.b = 0
@@ -100,31 +107,66 @@ class Segment:
              self.function = lambda x: self.slope*x + self.b
          
          # block is an integer value that represents the block's index in the block list.
+    def closest_intersection(self,seg,romo): #returns the closest point to Romo at which this segment intersects seg. False if no intersection.
+        # self must be a path segment from the Romo.
+        romo_front = Segment(romo.v3,romo.v4,-1)
+        if not self.check_intersect(seg):
+            return False
+        if self.slope == 'vertical':
+            if seg.slope == 'vertical':
+                return romo_front.closest_to([seg.p1,seg.p2])[0]
+            if seg.slope == 0:
+                return (self.x1,seg.y1)
+            else:
+                x = (-1*seg.b)/(seg.slope - 1)
+                return (x,seg.function(x))
+        if self.slope == 0:
+            if seg.slope == 'vertical':
+                return (seg.x1,self.y1)
+            if seg.slope == 0:
+                return romo_front.closest_to([seg.p1,seg.p2])[0]
+            else:
+                x = (self.b - seg.b)/(seg.slope)
+                return (x,seg.function(x))
+        else: #if slope is >0 or <0
+            if seg.slope == 0:
+                return seg.closest_intersection(self, romo)
+            if seg.slope == 'vertical':
+                return seg.closest_intersection(self,romo)
+            else:
+                if self.slope != seg.slope:
+                    x = (seg.b - self.b)/(self.slope - seg.slope)
+                    return (x,self.function(x))
+                else:
+                    return romo_front.closest_to([seg.p1,seg.p2])[0]
+                    
+            
     def check_intersect(self,seg2):
         if self.slope == "vertical" or seg2.slope == "vertical":
             if seg2.slope == "vertical" and self.slope == "vertical":
-                if self.contains(seg2.x1) or self.contains(seg2.x2) or seg2.contains(self.x1) or seg2.contains(self.x2): 
+                if self.contains_x(seg2.x1) or self.contains_x(seg2.x2) or seg2.contains_x(self.x1) or seg2.contains_x(self.x2): 
                       return True
                 return False
             elif seg2.slope == "vertical":
-                if self.contains(seg2.x1):
+                if self.contains_x(seg2.x1) and seg2.contains_y(self.function(seg2.x1)):
                     return True
                 return False
             elif self.slope == "vertical":
-                if seg2.contains(self.x1):
+                if seg2.contains_x(self.x1) and self.contains_y(seg2.function(self.x1)):
                     return True
                 return False
         elif self.slope-seg2.slope == 0: #lines are parallel
             if self.b - seg2.b == 0: #lines are the same
-                if self.contains(seg2.x1) or self.contains(seg2.x2) or seg2.contains(self.x1) or seg2.contains(self.x2): 
+                if self.contains_x(seg2.x1) or self.contains_x(seg2.x2) or seg2.contains_x(self.x1) or seg2.contains_x(self.x2): 
                       return True
             else: #parallel lines don't intersect
                 return False
         else:
             x = (seg2.b - self.b)/(self.slope-seg2.slope)
-            if self.contains(x) and seg2.contains(x):
+            if self.contains_x(x) and seg2.contains_x(x) and self.contains_y(seg2.function(x)) and seg2.contains_y(self.function(x)):
                 return True
             return False
+    
     def is_right_of(self, seg): #returns True if seg is to the right of or below this segment
         if self.check_intersect(seg):
             return False
@@ -144,13 +186,110 @@ class Segment:
             if self.function(seg.x1) > seg.y1 and self.function(seg.x2) > seg.y2:
                 return True
             return False
-        
-    def contains(self,x):
+    
+    def closest_to(self, list): #given a list of points and this segment (with points not on line) find closest point and return this and distance
+        if len(list) == 0:
+            return 'EMPTY LIST'
+        closest = []
+        lowest = 0
+        if self.slope == 'vertical':
+            print('here')
+            closest = list[0]
+            lowest = abs(self.x1 - list[0][1])
+            min = abs(self.x1 - list[0][1])
+            for p in list:
+                curr = abs(p[0]-self.x1)
+                if curr < min:
+                    closest = p
+                    lowest = curr
+                    min = curr
+            return (closest,lowest)
+        if self.slope == 0:
+            closest = list[0]
+            lowest = abs(self.y1 - list[0][1])
+            min = abs(self.y1 - list[0][1])
+            for p in list:
+                curr = abs(p[1]-self.y1)
+                if  curr < min:
+                    closest = p
+                    lowest = curr
+                    min = curr
+            return (closest,lowest)
+        else: #assuming a perpendicular through the SEGMENT will hit the point
+            perp_slope = -1/self.slope
+            closest = list[0]
+            x = (self.b+perp_slope*closest[0] - closest[1])/(perp_slope-self.slope)
+            y = self.function(x)
+            d = ((x-closest[0])**2 + (y-closest[1])**2)**0.5
+            lowest = d
+            min = 100000
+            for p in list:
+                x = (self.b+perp_slope*p[0] - p[1])/(perp_slope-self.slope)
+                y = self.function(x)
+                d = ((x-p[0])**2 + (y-p[1])**2)**0.5
+                if d < min:
+                    closest = p
+                    lowest = d
+                    min = d
+            return (closest,lowest)
+                 
+    def is_in_box(self,seg_list): #given list of 4 segments, determine if this segment is within the box.
+        if seg_list[2].slope == 0:
+            if seg_list[2].y1 < seg_list[0].y1:
+                if self.is_right_of(seg_list[3]) and self.is_right_of(seg_list[0]) and not self.is_right_of(seg_list[1]) and not self.is_right_of(seg_list[2]):
+                    return True
+                else:
+                    return False
+            else:
+                if self.is_right_of(seg_list[1]) and self.is_right_of(seg_list[2]) and not self.is_right_of(seg_list[3]) and not self.is_right_of(seg_list[0]):
+                    return True
+                else:
+                    return False
+        if seg_list[2].slope == 'vertical':
+            if seg_list[2].x1 < seg_list[0].x1:
+                if self.is_right_of(seg_list[2]) and self.is_right_of(seg_list[3]) and not self.is_right_of(seg_list[0]) and not self.is_right_of(seg_list[1]):
+                    return True
+                else:
+                    return False
+            else:
+                if self.is_right_of(seg_list[0]) and self.is_right_of(seg_list[1]) and not self.is_right_of(seg_list[2]) and not self.is_right_of(seg_list[3]):
+                    return True
+                else:
+                    return False
+        if seg_list[2].slope < 0:
+            if seg_list[2].x2 < romo.v4[0]:
+                if self.is_right_of(seg_list[0]) and self.is_right_of(seg_list[1]) and not self.is_right_of(seg_list[2]) and not self.is_right_of(seg_list[3]):
+                    return True
+                return False
+            else:
+                if self.is_right_of(seg_list[2]) and self.is_right_of(seg_list[3]) and not self.is_right_of(seg_list[0]) and not self.is_right_of(seg_list[1]):
+                    return True
+                return False  
+        if seg_list[2].slope > 0:
+            if seg_list[2].y2 < romo.v4[0]:
+                if self.is_right_of(seg_list[3]) and self.is_right_of(seg_list[0]) and not self.is_right_of(seg_list[1]) and not self.is_right_of(seg_list[2]):
+                    return True
+                else:
+                    return False
+            else:
+                if self.is_right_of(seg_list[1]) and self.is_right_of(seg_list[2]) and not self.is_right_of(seg_list[3]) and not self.is_right_of(seg_list[0]):
+                    return True
+                return False
+    def contains_x(self,x):
         if x >= self.x1 and x <= self.x2 or x <=self.x1 and x >= self.x2:
+            return True
+        return False
+    def contains_y(self,y):
+        if y >= self.y1 and y <= self.y2 or y <=self.y1 and y >= self.y2:
             return True
         return False
     def __repr__(self):
         return "Segment from ({0},{1}) to ({2},{3})".format(self.x1,self.y1,self.x2,self.y2)
+        
+def is_in_box(point,bounds):
+    if point[0] > min(bounds[0].x1,bounds[0].x2,bounds[1].x1,bounds[1].x2) and point[0] < max(bounds[0].x1,bounds[0].x2,bounds[1].x1,bounds[1].x2) and point[1] > min(bounds[0].y1,bounds[0].y2,bounds[1].y1,bounds[1].y2) and point[1] < max(bounds[0].y1,bounds[0].y2,bounds[1].y1,bounds[1].y2):
+        return True
+    return False
 
 def check_collision(romo): #Takes a Romo object
     # check for case where romo goes past object!
@@ -186,9 +325,15 @@ def predict_collision(romo,distance): #only works for positive distances to the 
     path_seg2 = Segment(romo.v4,(romo.v4[0] + distance*cos(romo.rotation),romo.v4[1] + distance*sin(romo.rotation)),-1)
     bound_seg1 = Segment((path_seg1.x1,path_seg1.y1),(path_seg2.x1,path_seg2.y1),-1)
     bound_seg2 = Segment((path_seg1.x2,path_seg1.y2),(path_seg2.x2,path_seg2.y2),-1)
-    bounds = [path_seg1,path_seg2,bound_seg1,bound_seg2]
+    #midpoint = ((v3[0]+v4[0])/2,(v3[1]+v4[1])/2)
+    #mid_seg = Segment(midpoint,(midpoint[0] + distance*cos(romo.rotation),midpoint[1] + distance*sin(romo.rotation)),-1)
+    romo_front = Segment(romo.v3,romo.v4,-1)
+    bounds = [bound_seg1,path_seg1,bound_seg2,path_seg2]
+    #paths = [path_seg1,path_seg2,midpoint]
+    box.extend(bounds)
     seg_list = []
     colliding_segs = []
+    collision_points = []
     for block in block_list: #should update this outside of function!
         index = block_list.index(block)
         seg1 = Segment(block.v1,block.v2,index)
@@ -196,32 +341,74 @@ def predict_collision(romo,distance): #only works for positive distances to the 
         seg3 = Segment(block.v3,block.v4,index)
         seg4 = Segment(block.v4,block.v1,index)
         seg_list.extend([seg1,seg2,seg3,seg4])
+        segs.extend(seg_list)
     for seg in seg_list:
         for bound in bounds:
-            if seg.check_intersect(bound):
-                colliding_segs.append(seg)
-        if seg.is_right_of(bound_seg1) and seg.is_right_of(path_seg1) and not seg.is_right_of(bound_seg2) and not seg.is_right_of(path_seg2):
-            colliding_segs.append(seg)
-    if len(colliding_segs) == 0:
-        return False #No collisions in path
-    obj = colliding_segs[0]
-    print(obj)
-    if path_seg1.slope == 'vertical':
-        d = min(obj.y1,obj.y2)-romo.v3[1]
-    elif path_seg1.slope == 0:
-        #print("HERE")
-        d = min(obj.x1,obj.x2)-path_seg1.x1
-    elif path_seg1.slope > 0:
-        perp_slope = -1/path_seg1.slope
-        x = ((-1*perp_slope*obj.x1 + obj.y1) - path_seg1.b)/(path_seg1.slope - perp_slope)
-        relative_x = x - path_seg1.x1
-        relative_y = path_seg1.function(x) - path_seg1.y1
-        d = (relative_x ** 2 + relative_y ** 2) ** 0.5
-    return d
+            if seg.check_intersect(bound) and bound.closest_intersection(seg,romo) != []: #WHY is this happening...
+                print("intersect at {0} {1}".format(seg,bound))
+                print('{0} {1}').format(seg,bound)
+                #collision_points.append(bound.closest_intersection(seg,romo))
+                collision_points.extend([seg.p1,seg.p2])
+            if is_in_box(seg.p1,bounds):
+                collision_points.append(seg.p1)
+            if is_in_box(seg.p2,bounds):
+                collision_points.append(seg.p2)
+                
+    print(collision_points)
+    if collision_points == []:
+        return False
+    coll = collision_points
+    collision_points = []
+    return romo_front.closest_to(coll)[1]
+    
 
-block1 = Block(20,5,0,5,5)
+block1 = Block(15,15,0,5,5)
 #romo = Romo(10+9*cos((20*pi)/180),5+9*sin((20*pi)/180),20,5,5)
-romo = Romo(10,5,10,5,5)
+romo = Romo(10,10,20,5,5)// If there's fewer than two items, do nothing.
+  if (low < high) {
+    int pivotIndex = random number from low to high;
+    Comparable pivot = a[pivotIndex];
+    a[pivotIndex] = a[high];                       // Swap pivot with last item
+    a[high] = pivot;
+
+    int i = low - 1;
+    int j = high;
+    do {
+      do { i++; } while (a[i].compareTo(pivot) < 0);
+      do { j--; } while ((a[j].compareTo(pivot) > 0) && (j > low));
+      if (i < j) {
+        swap a[i] and a[j];
+      }
+    } while (i < j);
+
+    a[high] = a[i];
+    a[i] = pivot;                   // Put pivot in the middle where it belongs
+    quicksort(a, low, i - 1);                     // Recursively sort left list
+    quicksort(a, i + 1, high);                   // Recursively sort right list
+  }
+}// If there's fewer than two items, do nothing.
+  if (low < high) {
+    int pivotIndex = random number from low to high;
+    Comparable pivot = a[pivotIndex];
+    a[pivotIndex] = a[high];                       // Swap pivot with last item
+    a[high] = pivot;
+
+    int i = low - 1;
+    int j = high;
+    do {
+      do { i++; } while (a[i].compareTo(pivot) < 0);
+      do { j--; } while ((a[j].compareTo(pivot) > 0) && (j > low));
+      if (i < j) {
+        swap a[i] and a[j];
+      }
+    } while (i < j);
+
+    a[high] = a[i];
+    a[i] = pivot;                   // Put pivot in the middle where it belongs
+    quicksort(a, low, i - 1);                     // Recursively sort left list
+    quicksort(a, i + 1, high);                   // Recursively sort right list
+  }
+}
 block_list= [block1]
 plt.show()
 
