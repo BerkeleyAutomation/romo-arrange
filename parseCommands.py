@@ -21,10 +21,8 @@ def parseCommands(text_file_path):
 def strip(string_arg):
     string_arg = string_arg.strip()
 
-class Romo:
-    angle = 45
-
-def interpretCommands(commands, Romo):
+def interpretCommands(commands):
+    toReturn = []
     for c in commands:
         name = c[0]
         args = c[1]
@@ -32,21 +30,16 @@ def interpretCommands(commands, Romo):
             left = float(args[0])
             right = float(args[0])
             time = float(args[1])
-            print left, right, time
+            toReturn.append([left, right, time])
         elif (name == "driveWithLeftMotorSpeedRightMotorSpeed"):
             left = float(args[0])
             right = float(args[1])
             time = float(args[2])
-            print left, right, time
+            toReturn.append([left, right, time])
         else:
             error_msg = "Invalid command " + name
             for a in args:
                 error_msg = error_msg + " " + a
-            print error_msg
-            sys.exit(0)
+            toReturn.append([error_msg])
+    return toReturn
         
-            
-
-
-r = Romo()
-interpretCommands(parseCommands("example.txt"), r)
