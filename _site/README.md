@@ -1,0 +1,54 @@
+Last Updated: May 4, 2013
+
+==================
+===ROMO-ARRANGE===
+==================
+
+Table of Contents:
+@1 - Description
+@2 - Matplotlib Simulator
+@3 - Pybox2d
+@4 - Setup
+@5 - Troubleshooting
+
+Description:
+This is a project for room cleanup of objects using the Romo robot (http://romotive.com). The problem is essentially as follow: Given control of a Romo robot, an overhead camera, and a "messy" room with objects scattered about, how can the rom be decluttered such that colored items are sorted into different areas of the room. 
+
+============
+
+Matplotlib Simulator:
+This was the initial attempt at creating a simulator. It was replaced by pybox2d because of the complications introduced with collision detection. No installation is necessary to run this.
+
+The matplotlib simulator can be run using 'python simulator.py'. This reads differential drive instructions in the native iPhone SDK language and turns them into a simulated series of images. These images are placed in a new directory based on the filename of the text file of instructions. The images are stitched together into a video as well. 
+
+Please view the code in simulator.py order to change other parameters such as which file to run drive commands from as well as video parameters.
+
+Files:
+-drawRomo.py - Handles matplotlib drawing
+-parseCommands.py - Reads commands from the input text file
+-objects.py - Object representation of the various items in the problem
+-simulator.py - Main file that imports the above and runs the actual simulation based on commands
+
+============
+
+Pybox2d Simulator:
+Pybox2d is a physics library in python based off of Box2d native in C++. This allows for easier representation of the problem in simulation as many physics elements are already made. To run, use 'python pybox_romo.py'. 
+
+============
+
+Setup:
+Pybox2d can be downloaded here: https://code.google.com/p/pybox2d/downloads/list. The installation process is documented in the README and INSTALL file. The version used for this is 2.3b0. 
+
+Mac Instructions:
+There are two prerequisites needed for a Mac install, Apple Developer Tools and SWIG. The version of SWIG being used is 2.0.3 though the versions appear to be compatible. 
+
+Pygame:
+Pygame is necessary for running testbed examples and needs to be installed as well.
+
+============
+
+Troubleshooting:
+
+One issue that was run into was pygame and pybox not running with the correct version of python. A workaround is using 'python2.7-32' as opposed to just using 'python' when running from terminal.
+
+--
