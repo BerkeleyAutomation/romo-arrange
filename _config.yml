@@ -1,0 +1,12 @@
+name: "Romo Rhumba"
+description: "Decluttering objects with Romo, computer vision, and motion planning"
+
+url: "http://berkeleyautomation.github.io/romo-arrange"
+
+paginate: 10
+
+markdown: rdiscount
+permalink: /:title
+pygments: true
+
+
